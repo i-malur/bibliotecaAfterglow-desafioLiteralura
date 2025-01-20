@@ -1,6 +1,5 @@
 package br.com.alura.afterglow.bibliotecaAfterglow.principal;
 
-import br.com.alura.afterglow.bibliotecaAfterglow.dto.AutorDTO;
 import br.com.alura.afterglow.bibliotecaAfterglow.dto.LivroDTO;
 import br.com.alura.afterglow.bibliotecaAfterglow.model.Autor;
 import br.com.alura.afterglow.bibliotecaAfterglow.model.Livro;
@@ -12,8 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Year;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Scanner;
 
 @Component
 public class Principal {
@@ -33,24 +32,30 @@ public class Principal {
         boolean running = true;
         while (running) {
             exibirMenu();
-            var opcao = leitura.nextInt();
-            leitura.nextLine();
-
-            switch (opcao) {
-                case 1 -> buscarLivrosPeloTitulo();
-                case 2 -> listarLivrosRegistrados();
-                case 3 -> listarAutoresRegistrados();
-                case 4 -> listarAutoresVivos();
-                case 5 -> listarAutoresVivosRefinado();
-                case 6 -> listarAutoresPorAnoDeMorte();
-                case 7 -> listarLivrosPorIdioma();
-                case 0 -> {
-                    System.out.println("Encerrando...");
-                    running = false;
+            if (leitura.hasNextInt()) { // Verifica se a entrada é um número inteiro
+                var opcao = leitura.nextInt();
+                leitura.nextLine();
+                switch (opcao) {
+                    case 1 -> buscarLivrosPeloTitulo();
+                    case 2 -> listarLivrosRegistrados();
+                    case 3 -> listarAutoresRegistrados();
+                    case 4 -> listarAutoresVivos();
+                    case 5 -> listarAutoresVivosRefinado();
+                    case 6 -> listarAutoresPorAnoDeMorte();
+                    case 7 -> listarLivrosPorIdioma();
+                    case 0 -> {
+                        System.out.println("Encerrando...");
+                        running = false; // Encerrando o loop
+                    }
+                    default -> System.out.println("Opção inválida!");
                 }
-                default -> System.out.println("Opção inválida!");
+            } else {
+                System.out.println("Por favor, insira um número válido.");
+                leitura.nextLine();
             }
         }
+        leitura.close();
+        System.out.println("Programa encerrado.");
     }
 
     private void exibirMenu() {
@@ -71,15 +76,10 @@ public class Principal {
             """);
     }
 
-    private void salvarLivros(List<Livro> livros) {
-        livros.forEach(livroRepository::save);
-    }
-
     private void buscarLivrosPeloTitulo() {
-        String baseURL = "https://gutendex.com/books?search=";
         System.out.print("Digite o título do livro: ");
         String titulo = leitura.nextLine();
-        String endereco = baseURL + titulo.replace(" ", "%20");
+        String endereco = "https://gutendex.com/books?search=" + titulo.replace(" ", "+");
         System.out.println("URL da API: " + endereco);
 
         try {
@@ -101,60 +101,42 @@ public class Principal {
 
             exibirLivrosDTO(livrosDTO);
 
-            List<Livro> livrosExistentes = livroRepository.findByTituloIgnoreCase(titulo);
-            List<LivroDTO> livrosNaoRegistrados = filtrarLivrosNaoRegistrados(livrosDTO, livrosExistentes);
-
-            if (!livrosNaoRegistrados.isEmpty()) {
-                System.out.println("Salvando novos livros encontrados...");
-                salvarLivros(livrosNaoRegistrados);
-                System.out.println("Livros salvos com sucesso!");
-            } else {
-                System.out.println("Todos os livros já estão registrados.");
-            }
-
-            exibirLivros(livrosNaoRegistrados);
+            salvarLivrosNaoRegistrados(livrosDTO);
         } catch (Exception e) {
             System.out.println("Erro ao buscar livros: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    private List<LivroDTO> filtrarLivrosNaoRegistrados(List<LivroDTO> livrosDTO, List<Livro> livrosExistentes) {
-        return livrosDTO.stream()
-                .filter(livroDTO -> livrosExistentes.stream()
-                        .noneMatch(livroExistente -> livroExistente.getTitulo().equals(livroDTO.titulo())))
-                .collect(Collectors.toList());
-    }
-
-    private void exibirLivrosDTO(List<LivroDTO> livrosDTO) {
-        livrosDTO.forEach(livroDTO -> System.out.println("Livro encontrado: " + livroDTO));
-    }
-
-    private void salvarLivros(List<LivroDTO> livrosDTO) {
+    private void salvarLivrosNaoRegistrados(List<LivroDTO> livrosDTO) {
+        List<Livro> livrosExistentes = livroRepository.findAll();
         livrosDTO.stream()
+                .filter(livroDTO -> livrosExistentes.stream()
+                        .noneMatch(livroExistente -> livroExistente.getTitulo().equalsIgnoreCase(livroDTO.titulo().trim())))
                 .map(this::mapearParaLivro)
-                .forEach(livroRepository::save);
+                .forEach(livro -> {
+                    try {
+                        livroRepository.save(livro);
+                        System.out.println("Livro '" + livro.getTitulo() + "' registrado com sucesso.");
+                    } catch (Exception e) {
+                        System.out.println("O livro '" + livro.getTitulo() + "' já está registrado. Ignorando duplicação.");
+                    }
+                });
     }
 
     private Livro mapearParaLivro(LivroDTO livroDTO) {
-        Autor autor = buscarAutor(livroDTO.autores().get(0));
+        System.out.println("Mapeando livro: " + livroDTO.titulo());
+        Autor autor = livroDTO.autores().isEmpty() ? null : Autor.fromDTO(livroDTO.autores().get(0));
         String idioma = livroDTO.idioma().isEmpty() ? "Desconhecido" : livroDTO.idioma().get(0);
-        return new Livro(livroDTO.titulo(), autor, idioma, livroDTO.numeroDownload());
+        Livro livro = new Livro(livroDTO.titulo(), autor, idioma, livroDTO.numeroDownload());
+        System.out.println("Livro mapeado: " + livro.getTitulo() + " - " + livro.getAutor());
+        return livro;
     }
 
-    private Autor buscarAutor(AutorDTO autorDTO) {
-        List<Autor> autores = livroRepository.findAutoresVivos(Year.now());
-        return autores.stream()
-                .filter(autor -> autor.getAutor().equals(autorDTO.autor()))
-                .findFirst()
-                .orElse(null);
-    }
 
-    private void exibirLivros(List<LivroDTO> livrosDTO) {
-        Set<String> titulosExibidos = new HashSet<>();
-        livrosDTO.stream()
-                .filter(livro -> titulosExibidos.add(livro.titulo()))
-                .forEach(System.out::println);
+
+    private void exibirLivrosDTO(List<LivroDTO> livrosDTO) {
+        livrosDTO.forEach(System.out::println);
     }
 
     private void listarLivrosRegistrados() {
@@ -165,7 +147,7 @@ public class Principal {
         livroRepository.findAll().stream()
                 .map(Livro::getAutor)
                 .distinct()
-                .forEach(autor -> System.out.println(autor.getAutor()));
+                .forEach(System.out::println);
     }
 
     private void listarAutoresVivos() {
@@ -182,43 +164,24 @@ public class Principal {
 
     private void listarAutoresPorAno(String tipo, AutorFetcher fetcher) {
         System.out.print("Digite o ano: ");
-        Integer ano = leitura.nextInt();
+        Year ano = Year.of(leitura.nextInt());
         leitura.nextLine();
 
-        Year year = Year.of(ano);
-        List<Autor> autores = fetcher.fetchAutores(year);
+        List<Autor> autores = fetcher.fetchAutores(ano);
 
         if (autores.isEmpty()) {
             System.out.println("Nenhum autor encontrado.");
         } else {
-            System.out.println("Lista de autores que " + tipo + " no ano de " + ano + ":\n");
-            autores.forEach(autor -> System.out.println(formatAutor(autor)));
+            System.out.printf("Autores que %s no ano de %s:%n", tipo, ano);
+            autores.forEach(System.out::println);
         }
     }
 
-    private String formatAutor(Autor autor) {
-        return Autor.possuiAno(autor.getAnoNascimento()) && Autor.possuiAno(autor.getAnoFalecimento()) ?
-                String.format("%s (%d - %d)", autor.getAutor(), autor.getAnoNascimento(), autor.getAnoFalecimento()) :
-                autor.getAutor();
-    }
-
     private void listarLivrosPorIdioma() {
-        System.out.println("""
-            Digite o idioma pretendido:
-            Inglês (en)
-            Português (pt)
-            Espanhol (es)
-            Francês (fr)
-            Alemão (de)
-            """);
+        System.out.print("Digite o idioma: ");
         String idioma = leitura.nextLine();
 
-        livroRepository.findByIdioma(idioma).forEach(livro -> {
-            System.out.println("Título: " + livro.getTitulo());
-            System.out.println("Autor: " + livro.getAutor().getAutor());
-            System.out.println("Idioma: " + livro.getIdioma());
-            System.out.println("----------------------------------------");
-        });
+        livroRepository.findByIdioma(idioma).forEach(System.out::println);
     }
 
     @FunctionalInterface

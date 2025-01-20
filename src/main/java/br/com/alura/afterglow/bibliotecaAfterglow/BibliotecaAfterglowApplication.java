@@ -1,7 +1,6 @@
 package br.com.alura.afterglow.bibliotecaAfterglow;
 
 import br.com.alura.afterglow.bibliotecaAfterglow.principal.Principal;
-import br.com.alura.afterglow.bibliotecaAfterglow.repository.LivroRepositorio;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
