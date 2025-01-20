@@ -1,8 +1,8 @@
 package br.com.alura.afterglow.bibliotecaAfterglow.controller;
 
+import br.com.alura.afterglow.bibliotecaAfterglow.dto.BookDTO;
 import br.com.alura.afterglow.bibliotecaAfterglow.service.BookService;
-import br.com.alura.afterglow.bibliotecaAfterglow.model.Book;
-
+import br.com.alura.afterglow.bibliotecaAfterglow.service.GutendexService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -14,8 +14,13 @@ public class BookController {
     @Autowired
     private BookService bookService;
 
+    @Autowired
+    private GutendexService gutendexService;
+
     public void searchBookByTitle(String title) {
-        List<Book> books = bookService.searchBooksByTitle(title);
+        // Enviando o título codificado para a API
+        List<BookDTO> books = gutendexService.fetchBooksFromGutendex(title);
+
         if (books.isEmpty()) {
             System.out.println("Nenhum livro encontrado com o título: " + title);
         } else {
@@ -23,8 +28,9 @@ public class BookController {
         }
     }
 
+
     public void listAllBooks() {
-        List<Book> books = bookService.getAllBooks();
+        List<BookDTO> books = bookService.getAllBooks();
         if (books.isEmpty()) {
             System.out.println("Nenhum livro registrado.");
         } else {
@@ -42,7 +48,7 @@ public class BookController {
     }
 
     public void listAuthorsAliveInYear(int year) {
-        List<Book> authors = bookService.getAuthorsAliveInYear(year);
+        List<BookDTO> authors = bookService.getAuthorsAliveInYear(year);
         if (authors.isEmpty()) {
             System.out.println("Nenhum autor vivo encontrado no ano: " + year);
         } else {
@@ -51,7 +57,7 @@ public class BookController {
     }
 
     public void listBooksByLanguage(String language) {
-        List<Book> books = bookService.getBooksByLanguage(language);
+        List<BookDTO> books = bookService.getBooksByLanguage(language);
         if (books.isEmpty()) {
             System.out.println("Nenhum livro encontrado no idioma: " + language);
         } else {

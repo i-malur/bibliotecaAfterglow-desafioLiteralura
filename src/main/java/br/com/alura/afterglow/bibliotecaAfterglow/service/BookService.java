@@ -1,8 +1,9 @@
 package br.com.alura.afterglow.bibliotecaAfterglow.service;
 
+import br.com.alura.afterglow.bibliotecaAfterglow.mapper.BookMapper;
 import br.com.alura.afterglow.bibliotecaAfterglow.repository.BookRepository;
 import br.com.alura.afterglow.bibliotecaAfterglow.model.Book;
-
+import br.com.alura.afterglow.bibliotecaAfterglow.dto.BookDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,12 +15,17 @@ public class BookService {
     @Autowired
     private BookRepository bookRepository;
 
-    public List<Book> searchBooksByTitle(String title) {
-        return bookRepository.findByTitleContainingIgnoreCase(title);
+    @Autowired
+    private BookMapper bookMapper;
+
+    public List<BookDTO> searchBooksByTitle(String title) {
+        List<Book> books = bookRepository.findByTitleContainingIgnoreCase(title);
+        return bookMapper.toDTOList(books);
     }
 
-    public List<Book> getAllBooks() {
-        return bookRepository.findAll();
+    public List<BookDTO> getAllBooks() {
+        List<Book> books = bookRepository.findAll();
+        return bookMapper.toDTOList(books);
     }
 
     public List<String> getAllAuthors() {
@@ -29,11 +35,13 @@ public class BookService {
                 .toList();
     }
 
-    public List<Book> getBooksByLanguage(String language) {
-        return bookRepository.findByLanguageIgnoreCase(language);
+    public List<BookDTO> getBooksByLanguage(String language) {
+        List<Book> books = bookRepository.findByLanguageIgnoreCase(language);
+        return bookMapper.toDTOList(books);
     }
 
-    public List<Book> getAuthorsAliveInYear(int year) {
-        return bookRepository.findByAuthorDeathYearNullAndAuthorBirthYearLessThanEqual(year);
+    public List<BookDTO> getAuthorsAliveInYear(int year) {
+        List<Book> books = bookRepository.findByAuthorDeathYearNullAndAuthorBirthYearLessThanEqual(year);
+        return bookMapper.toDTOList(books);
     }
 }

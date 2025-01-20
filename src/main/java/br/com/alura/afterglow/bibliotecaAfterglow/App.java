@@ -65,7 +65,5 @@ public class App implements CommandLineRunner {
                     System.out.println("Opção inválida. Tente novamente.");
             }
         }
-
-        scanner.close();
     }
 }

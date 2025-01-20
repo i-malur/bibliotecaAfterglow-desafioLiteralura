@@ -1,15 +1,6 @@
-package br.com.alura.afterglow.bibliotecaAfterglow.model;
+package br.com.alura.afterglow.bibliotecaAfterglow.dto;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-
-@Entity
-public class Book {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class BookDTO {
     private String title;
     private String author;
     private String language;
@@ -17,9 +8,7 @@ public class Book {
     private Integer authorBirthYear;
     private Integer authorDeathYear;
 
-    public Book() {}
-
-    public Book(String title, String author, String language, Integer publicationYear, Integer authorBirthYear, Integer authorDeathYear) {
+    public BookDTO(String title, String author, String language, Integer publicationYear, Integer authorBirthYear, Integer authorDeathYear) {
         this.title = title;
         this.author = author;
         this.language = language;
@@ -29,14 +18,6 @@ public class Book {
     }
 
     // Getters e Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public String getTitle() {
         return title;
     }
